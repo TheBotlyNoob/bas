@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "cpu.h"
@@ -7,35 +8,33 @@
 int run_op(c8_cpu_t *cpu, uint16_t op)
 {
 
-    // lower byte lower nyble
-    uint32_t ll_n = op >> 12;
+    // see #3.0 in the ref for what these mean
+    uint16_t nnn = op & 0x0FFF;
+    uint8_t kk = op >> 8;
+    uint8_t x = (op >> 8) & 0x0F;
+    uint8_t y = op & 0xF0 >> 4;
+    uint8_t n = op & 0x000F;
+    // my own; the first nyble
+    uint8_t f = (op >> 12);
 
-    printf("%x\n", ll_n);
-    // lower byte upper nyble
-    uint8_t lu_n = (op >> 4) & 0x0F;
-    printf("%x\n", lu_n);
-    // upper byte lower nyble
-    uint8_t ul_n = (op >> 4) & 0xF0;
-    printf("%x\n", ul_n);
-
-    // upper byte upper nyble
-    uint8_t uu_n = op & 0x000f;
-
-    switch (ll_n) // get first nyble
+    switch (f)
     {
-    case 0x0: //
-        // if (uu_n == 0)
-        // {
-        //     inst_cls();
-        // }
-        // else
-        // {
-        //     inst_ret();
-        // }
-        return 1;
+    case 0x0:
+        if (n == 0)
+        {
+            op_cls(cpu);
+        }
+        else
+        {
+            op_rts(cpu);
+        }
         break;
     case 0x1:
-        op_jp(cpu, op & 0x0fff);
+        op_jp(cpu, nnn);
+        break;
+    case 0x2:
+        op_call(cpu, nnn);
+        break;
     default:
         return 1;
     }
@@ -48,6 +47,7 @@ void run_cpu(c8_cpu_t cpu)
     {
         uint16_t op = cpu.mem[cpu.pc] << 8 | (cpu.mem[cpu.pc + 1]);
         printf("running opcode: 0x%04x; pc = 0x%x\n", op, cpu.pc);
+
         cpu.pc += 2;
 
         if (run_op(&cpu, op) != 0)
@@ -55,6 +55,36 @@ void run_cpu(c8_cpu_t cpu)
             printf("opcode not found: 0x%04x\n", op);
             break;
         }
+
         break;
     }
+}
+
+uint16_t cpu_pop(c8_cpu_t *cpu)
+{
+    if (cpu->sp == STACK_SIZE - 1)
+    {
+        printf("STACK UNDERFLOW AT %04x", cpu->pc - 2);
+        exit(1);
+    }
+
+    uint8_t val = cpu->mem[cpu->sp];
+
+    cpu->sp += sizeof(uint16_t);
+
+    return val;
+}
+bool cpu_push(c8_cpu_t *cpu, uint16_t addr)
+{
+    if (cpu->sp == 0)
+    {
+        printf("STACK OVERFLOW AT %04x", cpu->pc - 2);
+        return false;
+    }
+
+    cpu->mem[cpu->sp] = addr;
+
+    cpu->sp -= sizeof(uint16_t);
+
+    return true;
 }

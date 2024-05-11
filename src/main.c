@@ -43,10 +43,11 @@ int main(int argc, char *argv[])
 
     memcpy(&cpu.mem[START_LOC], &mem, read);
 
-    printf("after\n");
+    cpu.mem[START_LOC] = 0x00;
+    cpu.mem[START_LOC + 1] = 0xE0;
 
     cpu.pc = START_LOC;
-    cpu.sp = 16 - 1;
+    cpu.sp = STACK_SIZE - 1;
     cpu.reg_i = 0;
     for (int i = 0; i < 16; i++)
     {
