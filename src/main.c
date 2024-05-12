@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
+
+#ifndef CHIP8_DETERMINISTIC
+#include <time.h>
+#endif
 
 #include "cpu.h"
 
@@ -54,5 +59,12 @@ int main(int argc, char *argv[])
         cpu.general_reg[i] = 0;
     };
 
-    run_cpu(cpu);
+#ifdef CHIP8_DETERMINISTIC
+    printf("running in deterministic mode.");
+    srand(1)
+#else
+    srand(time(NULL));
+#endif
+
+        run_cpu(cpu);
 }

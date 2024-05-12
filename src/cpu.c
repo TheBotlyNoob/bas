@@ -35,6 +35,58 @@ int run_op(c8_cpu_t *cpu, uint16_t op)
     case 0x2:
         op_call(cpu, nnn);
         break;
+    case 0x3:
+        op_se(cpu, x, kk);
+        break;
+    case 0x4:
+        op_sne(cpu, x, kk);
+        break;
+    case 0x5:
+        op_se(cpu, x, cpu->general_reg[y]);
+        break;
+    case 0x6:
+        op_ld(cpu, x, kk);
+        break;
+    case 0x7:
+        op_add(cpu, x, kk);
+        break;
+    case 0x8:
+        switch (n)
+        {
+        case 0x00:
+            op_ld(cpu, x, cpu->general_reg[y]);
+            break;
+        case 0x01:
+            op_or(cpu, x, cpu->general_reg[y]);
+            break;
+        case 0x02:
+            op_and(cpu, x, cpu->general_reg[y]);
+            break;
+        case 0x03:
+            op_xor(cpu, x, cpu->general_reg[y]);
+            break;
+        case 0x04:
+            op_add(cpu, x, cpu->general_reg[y]);
+            break;
+        case 0x05:
+            op_sub(cpu, x, cpu->general_reg[y]);
+            break;
+        default:
+            return 1;
+        }
+        break;
+    case 0x9:
+        op_sne(cpu, x, cpu->general_reg[y]);
+        break;
+    case 0xA:
+        op_ld_i(cpu, nnn);
+        break;
+    case 0xB:
+        op_jp(cpu, nnn + cpu->general_reg[0]);
+        break;
+    case 0xC:
+        // op_rand(x, y);
+
     default:
         return 1;
     }
