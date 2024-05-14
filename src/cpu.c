@@ -9,24 +9,27 @@ int run_op(c8_cpu_t *cpu, uint16_t op)
 {
 
     // see #3.0 in the ref for what these mean
-    uint16_t nnn = op & 0x0FFF;
-    uint8_t kk = op >> 8;
+    uint16_t nnn = op & 0xFFF;
+    uint8_t kk = op & 0xFF;
     uint8_t x = (op >> 8) & 0x0F;
     uint8_t y = op & 0xF0 >> 4;
-    uint8_t n = op & 0x000F;
+    uint8_t n = op & 0xF;
     // my own; the first nyble
     uint8_t f = (op >> 12);
 
     switch (f)
     {
     case 0x0:
-        if (n == 0)
+        switch (nnn)
         {
+        case 0x0E0:
             op_cls(cpu);
-        }
-        else
-        {
-            op_rts(cpu);
+            break;
+        case 0x0EE:
+            op_ret(cpu);
+            break;
+        default:
+            return 1;
         }
         break;
     case 0x1:
@@ -42,7 +45,14 @@ int run_op(c8_cpu_t *cpu, uint16_t op)
         op_sne(cpu, x, kk);
         break;
     case 0x5:
-        op_se(cpu, x, cpu->general_reg[y]);
+        if (n == 0x0)
+        {
+            op_se(cpu, x, cpu->general_reg[y]);
+        }
+        else
+        {
+            return 1;
+        }
         break;
     case 0x6:
         op_ld(cpu, x, kk);
@@ -53,23 +63,34 @@ int run_op(c8_cpu_t *cpu, uint16_t op)
     case 0x8:
         switch (n)
         {
-        case 0x00:
+        case 0x0:
             op_ld(cpu, x, cpu->general_reg[y]);
             break;
-        case 0x01:
+        case 0x1:
             op_or(cpu, x, cpu->general_reg[y]);
             break;
-        case 0x02:
+        case 0x2:
             op_and(cpu, x, cpu->general_reg[y]);
             break;
-        case 0x03:
+        case 0x3:
             op_xor(cpu, x, cpu->general_reg[y]);
             break;
-        case 0x04:
+        case 0x4:
             op_add(cpu, x, cpu->general_reg[y]);
             break;
-        case 0x05:
+        case 0x5:
             op_sub(cpu, x, cpu->general_reg[y]);
+            break;
+        case 0x6:
+            op_shr(cpu, x);
+            break;
+        case 0x7:
+            printf("NOT IMPLEMENTED");
+            return 1;
+            op_sub(cpu, y, cpu->general_reg[x]);
+            break;
+        case 0xE:
+            op_shl(cpu, x);
             break;
         default:
             return 1;
@@ -85,8 +106,58 @@ int run_op(c8_cpu_t *cpu, uint16_t op)
         op_jp(cpu, nnn + cpu->general_reg[0]);
         break;
     case 0xC:
-        // op_rand(x, y);
-
+        op_rnd(cpu, x, y);
+        break;
+    case 0xD:
+        op_drw(cpu, x, y, n);
+        break;
+    case 0xE:
+        switch (n)
+        {
+        case 0xE:
+            op_skp(cpu, x);
+            break;
+        case 0x1:
+            op_sknp(cpu, x);
+            break;
+        default:
+            return 1;
+        }
+        break;
+    case 0xF:
+        switch (kk)
+        {
+        case 0x07:
+            op_ld_reg_dt(cpu, x);
+            break;
+        case 0x0A:
+            printf("TODO: LD K");
+            break;
+        case 0x15:
+            op_ld_dt_reg(cpu, x);
+            break;
+        case 0x18:
+            op_ld_st(cpu, x);
+            break;
+        case 0x1E:
+            op_add_i(cpu, x);
+            break;
+        case 0x29:
+            op_ld_dig(cpu, x);
+            break;
+        case 0x33:
+            op_ld_bcd(cpu, x);
+            break;
+        case 0x55:
+            op_ld_reg_mem(cpu, x);
+            break;
+        case 0x65:
+            op_ld_mem_reg(cpu, x);
+            break;
+        default:
+            return 1;
+        }
+        break;
     default:
         return 1;
     }
@@ -98,7 +169,7 @@ void run_cpu(c8_cpu_t cpu)
     while (true)
     {
         uint16_t op = cpu.mem[cpu.pc] << 8 | (cpu.mem[cpu.pc + 1]);
-        printf("running opcode: 0x%04x; pc = 0x%x\n", op, cpu.pc);
+        printf("running opcode: 0x%04x; pc = 0x%04x\n", op, cpu.pc);
 
         cpu.pc += 2;
 
@@ -107,36 +178,47 @@ void run_cpu(c8_cpu_t cpu)
             printf("opcode not found: 0x%04x\n", op);
             break;
         }
-
-        break;
     }
+}
+
+void u16_to_be(uint8_t *buf, uint16_t val)
+{
+    buf[0] = val & 0xFF;
+    buf[1] = val >> 8;
+}
+uint16_t be_to_u16(uint8_t *buf)
+{
+    return buf[0] | buf[1] << 8;
 }
 
 uint16_t cpu_pop(c8_cpu_t *cpu)
 {
+
     if (cpu->sp == STACK_SIZE - 1)
     {
-        printf("STACK UNDERFLOW AT %04x", cpu->pc - 2);
+        printf("STACK UNDERFLOW AT %04x\n", cpu->pc - 2);
         exit(1);
     }
 
-    uint8_t val = cpu->mem[cpu->sp];
-
     cpu->sp += sizeof(uint16_t);
+
+    uint16_t val = be_to_u16(&cpu->mem[cpu->sp]);
+
+    printf("popping %04x from %04x\n", val, cpu->sp);
 
     return val;
 }
-bool cpu_push(c8_cpu_t *cpu, uint16_t addr)
+void cpu_push(c8_cpu_t *cpu, uint16_t addr)
 {
     if (cpu->sp == 0)
     {
-        printf("STACK OVERFLOW AT %04x", cpu->pc - 2);
-        return false;
+        printf("STACK OVERFLOW AT %04x\n", cpu->pc - 2);
+        exit(1);
     }
 
-    cpu->mem[cpu->sp] = addr;
+    printf("pushing %04x to %04x\n", addr, cpu->sp);
+
+    u16_to_be(&cpu->mem[cpu->sp], addr);
 
     cpu->sp -= sizeof(uint16_t);
-
-    return true;
 }

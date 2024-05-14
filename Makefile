@@ -27,6 +27,11 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 # These files will have .d instead of .o as the output.
 CPPFLAGS := $(INC_FLAGS) -MMD -MP
 
+.PHONY: test run
+
+test: 
+	$(MAKE) CFLAGS="-g -O1" ARGS="test/test_opcode.ch8" run
+
 run: build
 	@echo
 	@echo

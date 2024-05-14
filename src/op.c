@@ -5,26 +5,14 @@
 
 #include "op.h"
 
-bool add_will_overflow(uint8_t a, uint8_t b)
-{
-    if (b > UINT8_MAX - a)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 void op_cls(c8_cpu_t *cpu)
 {
-    printf("\e[1;1H\e[2J");
+    // printf("\e[1;1H\e[2J");
+    printf("SCREEN CLEARED\n");
 }
-void op_rts(c8_cpu_t *cpu)
+void op_ret(c8_cpu_t *cpu)
 {
-    uint16_t addr = cpu_pop(cpu);
-    cpu->pc = addr - 1;
+    cpu->pc = cpu_pop(cpu) - 1;
 }
 
 void op_jp(c8_cpu_t *cpu, uint16_t addr)
@@ -61,33 +49,124 @@ void op_ld_i(c8_cpu_t *cpu, uint16_t val)
 {
     cpu->reg_i = val;
 }
+void op_ld_reg_dt(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    cpu->general_reg[reg_n] = cpu->delay_timer;
+}
+void op_ld_dt_reg(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    cpu->delay_timer = cpu->general_reg[reg_n];
+}
+void op_ld_st(c8_cpu_t *cpu, uint8_t val)
+{
+    cpu->sound_timer = val;
+}
+void op_ld_dig(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    printf("TODO: FONT FAMILY");
+}
+void op_ld_bcd(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    cpu->mem[cpu->reg_i] = (reg_n / 10 / 10) & 0xF;
+    cpu->mem[cpu->reg_i + 1] = (reg_n / 10) & 0xF;
+    cpu->mem[cpu->reg_i + 2] = reg_n % 10;
+}
+void op_ld_reg_mem(c8_cpu_t *cpu, uint8_t max_reg_n)
+{
+    uint8_t i;
+    for (i = 0; i < max_reg_n; ++i)
+    {
+        cpu->mem[cpu->reg_i + i] = cpu->general_reg[i];
+    }
+}
+void op_ld_mem_reg(c8_cpu_t *cpu, uint8_t max_reg_n)
+{
+    uint8_t i;
+    for (i = 0; i < max_reg_n; ++i)
+    {
+        cpu->general_reg[i] = cpu->mem[cpu->reg_i + i];
+    }
+}
 
 void op_or(c8_cpu_t *cpu, uint8_t reg_n, uint8_t val)
 {
-    cpu->general_reg[reg_n] = cpu->general_reg[reg_n] | val;
+    cpu->general_reg[reg_n] |= val;
 }
 void op_xor(c8_cpu_t *cpu, uint8_t reg_n, uint8_t val)
 {
-    cpu->general_reg[reg_n] = cpu->general_reg[reg_n] ^ val;
+    cpu->general_reg[reg_n] ^= val;
 }
 void op_and(c8_cpu_t *cpu, uint8_t reg_n, uint8_t val)
 {
-    cpu->general_reg[reg_n] = cpu->general_reg[reg_n] & val;
+    cpu->general_reg[reg_n] &= val;
+}
+
+void op_shr(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    if (cpu->general_reg[reg_n] & 1 == 1)
+    {
+        cpu->general_reg[0xF] = 1;
+    }
+    cpu->general_reg[reg_n] >>= 1;
+}
+void op_shl(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    if (cpu->general_reg[reg_n] >> 7 == 1)
+    {
+        cpu->general_reg[0xF] = 1;
+    }
+    cpu->general_reg[reg_n] <<= 1;
 }
 
 void op_add(c8_cpu_t *cpu, uint8_t reg_n, uint8_t val)
 {
-    if (cpu->general_reg[reg_n] > UINT8_MAX - val)
-    {
-        cpu->general_reg[0xF] = 1;
-    }
-    cpu->general_reg[reg_n] = cpu->general_reg[reg_n] + val;
+    cpu->general_reg[0xF] = cpu->general_reg[reg_n] > UINT8_MAX - val;
+
+    cpu->general_reg[reg_n] += val;
 }
+void op_add_i(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    cpu->reg_i += cpu->general_reg[reg_n];
+}
+
 void op_sub(c8_cpu_t *cpu, uint8_t reg_n, uint8_t val)
 {
-    if (val > cpu->general_reg[reg_n])
-    {
-        cpu->general_reg[0xF] = 1;
-    }
+    cpu->general_reg[0xF] = val > cpu->general_reg[reg_n];
+
     cpu->general_reg[reg_n] = cpu->general_reg[reg_n] - val;
+}
+
+void op_rnd(c8_cpu_t *cpu, uint8_t reg_n, uint8_t mask)
+{
+    cpu->general_reg[reg_n] = (rand() % UINT8_MAX) & mask;
+}
+
+void op_drw(c8_cpu_t *cpu, uint8_t reg_n_x, uint8_t reg_n_y, uint8_t sprite_rows)
+{
+    uint8_t i, j, sprite_row, x_idx, y_idx;
+
+    cpu->general_reg[0xF] = 0;
+
+    for (i = 0; i < sprite_rows; ++i)
+    {
+        sprite_row = cpu->mem[cpu->reg_i + i];
+        for (j = 0; j < 8; ++j)
+        {
+            x_idx = (reg_n_x + i) % DISPLAY_WIDTH;
+            y_idx = (reg_n_y + j) % DISPLAY_HEIGHT;
+
+            cpu->general_reg[0xF] = cpu->display[x_idx][y_idx] | cpu->general_reg[0xF];
+
+            cpu->display[x_idx][y_idx] ^= (sprite_row >> j) & 1;
+        }
+    }
+}
+
+void op_skp(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    printf("TODO: KEYBOARD INPUT; IGNORING");
+}
+void op_sknp(c8_cpu_t *cpu, uint8_t reg_n)
+{
+    printf("TODO: KEYBOARD INPUT; IGNORING");
 }

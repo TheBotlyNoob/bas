@@ -14,7 +14,8 @@ int main(int argc, char *argv[])
 {
     FILE *fp;
     uint8_t mem[MEM_SIZE - START_LOC];
-    uint8_t i;
+    uint8_t i, j;
+    uint16_t m;
     size_t read;
 
     if (argc != 2)
@@ -41,23 +42,29 @@ int main(int argc, char *argv[])
 
     c8_cpu_t cpu;
 
-    // for (i = 0; i < MEM_SIZE; i++)
-    // {
-    //     cpu.mem[i] = 0;
-    // }
+    for (m = 0; m < MEM_SIZE; ++m)
+    {
+        cpu.mem[m] = 0;
+    }
 
     memcpy(&cpu.mem[START_LOC], &mem, read);
-
-    cpu.mem[START_LOC] = 0x00;
-    cpu.mem[START_LOC + 1] = 0xE0;
 
     cpu.pc = START_LOC;
     cpu.sp = STACK_SIZE - 1;
     cpu.reg_i = 0;
-    for (int i = 0; i < 16; i++)
+    cpu.last_tick_time_ms = 0;
+    for (i = 0; i < 16; ++i)
     {
         cpu.general_reg[i] = 0;
     };
+
+    for (i = 0; i < DISPLAY_WIDTH; ++i)
+    {
+        for (j = 0; j < DISPLAY_HEIGHT; ++j)
+        {
+            cpu.display[i][j] = 0;
+        }
+    }
 
 #ifdef CHIP8_DETERMINISTIC
     printf("running in deterministic mode.");
