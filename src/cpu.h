@@ -27,7 +27,7 @@ typedef struct
     uint8_t delay_timer;
     uint8_t sound_timer;
 
-    __suseconds_t last_tick_time_ms;
+    uint64_t last_tick_time_ms;
 
     // TODO: optimize because its monochrome and we store a u8 anyways
     uint8_t display[DISPLAY_WIDTH][DISPLAY_HEIGHT];

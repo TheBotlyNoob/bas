@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "cpu.h"
 #include "op.h"
@@ -164,12 +165,29 @@ int run_op(c8_cpu_t *cpu, uint16_t op)
     return 0;
 }
 
+void get_now_ms(struct timeval *now, uint64_t *ms)
+{
+    gettimeofday(now, NULL);
+    *ms = 1000 * now->tv_sec + now->tv_usec / 1000;
+}
+
 void run_cpu(c8_cpu_t cpu)
 {
+    struct timeval now;
+    uint64_t now_ms;
+
+    get_now_ms(&now, &now_ms);
+
     while (true)
     {
+        do
+        {
+            get_now_ms(&now, &now_ms);
+            // printf("%d\n", now_ms);
+        } while (now_ms < cpu.last_tick_time_ms + 60);
+
         uint16_t op = cpu.mem[cpu.pc] << 8 | (cpu.mem[cpu.pc + 1]);
-        printf("running opcode: 0x%04x; pc = 0x%04x\n", op, cpu.pc);
+        // printf("running opcode: 0x%04x; pc = 0x%04x\n", op, cpu.pc);
 
         cpu.pc += 2;
 
@@ -178,6 +196,29 @@ void run_cpu(c8_cpu_t cpu)
             printf("opcode not found: 0x%04x\n", op);
             break;
         }
+
+        // todo: do this for realsies; don't hardcode for test rom
+        if (op == 0xdab4)
+        {
+            printf("\e[1;1H\e[2J");
+            for (int i = 0; i < DISPLAY_HEIGHT; ++i)
+            {
+                for (int j = 0; j < DISPLAY_WIDTH; ++j)
+                {
+                    if (cpu.display[i][j] == 1)
+                    {
+                        printf("█");
+                    }
+                    else
+                    {
+                        printf(" ");
+                    }
+                }
+                printf("\n");
+            }
+        }
+
+        cpu.last_tick_time_ms = now_ms;
     }
 }
 
@@ -204,8 +245,6 @@ uint16_t cpu_pop(c8_cpu_t *cpu)
 
     uint16_t val = be_to_u16(&cpu->mem[cpu->sp]);
 
-    printf("popping %04x from %04x\n", val, cpu->sp);
-
     return val;
 }
 void cpu_push(c8_cpu_t *cpu, uint16_t addr)
@@ -215,8 +254,6 @@ void cpu_push(c8_cpu_t *cpu, uint16_t addr)
         printf("STACK OVERFLOW AT %04x\n", cpu->pc - 2);
         exit(1);
     }
-
-    printf("pushing %04x to %04x\n", addr, cpu->sp);
 
     u16_to_be(&cpu->mem[cpu->sp], addr);
 
