@@ -141,21 +141,21 @@ void op_rnd(c8_cpu_t *cpu, uint8_t reg_n, uint8_t mask)
     cpu->general_reg[reg_n] = (rand() % UINT8_MAX) & mask;
 }
 
-void op_drw(c8_cpu_t *cpu, uint8_t reg_n_x, uint8_t reg_n_y, uint8_t sprite_rows)
+void op_drw(c8_cpu_t *cpu, uint8_t reg_n_x, uint8_t reg_n_y, uint8_t sprite_height)
 {
     uint8_t i, j, sprite_row, x_idx, y_idx;
 
     cpu->general_reg[0xF] = 0;
 
-    for (i = 0; i < sprite_rows; ++i)
+    for (i = 0; i < sprite_height; ++i)
     {
-        sprite_row = cpu->mem[cpu->reg_i + i];
+        sprite_height = cpu->mem[cpu->reg_i + i];
         for (j = 0; j < 8; ++j)
         {
-            x_idx = (reg_n_x + i) % DISPLAY_WIDTH;
-            y_idx = (reg_n_y + j) % DISPLAY_HEIGHT;
+            x_idx = (cpu->general_reg[reg_n_x] + i) % DISPLAY_WIDTH;
+            y_idx = (cpu->general_reg[reg_n_y] + j) % DISPLAY_HEIGHT;
 
-            cpu->general_reg[0xF] = cpu->display[x_idx][y_idx] | cpu->general_reg[0xF];
+            cpu->general_reg[0xF] |= (cpu->display[x_idx][y_idx] >> j) & 1;
 
             cpu->display[x_idx][y_idx] ^= (sprite_row >> j) & 1;
         }

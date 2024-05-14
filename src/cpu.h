@@ -29,8 +29,7 @@ typedef struct
 
     uint64_t last_tick_time_ms;
 
-    // TODO: optimize because its monochrome and we store a u8 anyways
-    uint8_t display[DISPLAY_WIDTH][DISPLAY_HEIGHT];
+    uint8_t display[DISPLAY_HEIGHT][DISPLAY_WIDTH / 8];
 } c8_cpu_t;
 
 void run_cpu(c8_cpu_t cpu);
