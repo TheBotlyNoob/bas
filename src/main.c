@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
         cpu.general_reg[i] = 0;
     };
 
-    for (i = 0; i < DISPLAY_WIDTH; ++i)
+    for (i = 0; i < DISPLAY_HEIGHT; ++i)
     {
-        for (j = 0; j < DISPLAY_HEIGHT; ++j)
+        for (j = 0; j < DISPLAY_WIDTH / 8; ++j)
         {
             cpu.display[i][j] = 0;
         }

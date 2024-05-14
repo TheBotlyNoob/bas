@@ -152,12 +152,12 @@ void op_drw(c8_cpu_t *cpu, uint8_t reg_n_x, uint8_t reg_n_y, uint8_t sprite_heig
         sprite_height = cpu->mem[cpu->reg_i + i];
         for (j = 0; j < 8; ++j)
         {
-            x_idx = (cpu->general_reg[reg_n_x] + i) % DISPLAY_WIDTH;
             y_idx = (cpu->general_reg[reg_n_y] + j) % DISPLAY_HEIGHT;
+            x_idx = (cpu->general_reg[reg_n_x] + i) % DISPLAY_WIDTH;
 
-            cpu->general_reg[0xF] |= (cpu->display[x_idx][y_idx] >> j) & 1;
+            cpu->general_reg[0xF] |= (cpu->display[x_idx / 8][y_idx] >> (x_idx % 8)) & 1;
 
-            cpu->display[x_idx][y_idx] ^= (sprite_row >> j) & 1;
+            cpu->display[y_idx][x_idx] ^= sprite_row & (1 << j);
         }
     }
 }

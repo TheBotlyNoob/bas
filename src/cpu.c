@@ -205,7 +205,7 @@ void run_cpu(c8_cpu_t cpu)
             {
                 for (int j = 0; j < DISPLAY_WIDTH; ++j)
                 {
-                    if (cpu.display[i][j] == 1)
+                    if (cpu.display[i][j / 8] >> (j % 8) & 1 == 1)
                     {
                         printf("█");
                     }
