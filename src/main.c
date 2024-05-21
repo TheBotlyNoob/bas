@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < DISPLAY_HEIGHT; ++i)
     {
-        for (j = 0; j < DISPLAY_WIDTH / 8; ++j)
+        for (j = 0; j < DISPLAY_WIDTH; ++j)
         {
             cpu.display[i][j] = 0;
         }

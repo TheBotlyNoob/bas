@@ -143,21 +143,27 @@ void op_rnd(c8_cpu_t *cpu, uint8_t reg_n, uint8_t mask)
 
 void op_drw(c8_cpu_t *cpu, uint8_t reg_n_x, uint8_t reg_n_y, uint8_t sprite_height)
 {
-    uint8_t i, j, sprite_row, x_idx, y_idx;
+    uint8_t y_coord, x_coord, sprite_row, x_idx, y_idx;
 
     cpu->general_reg[0xF] = 0;
 
-    for (i = 0; i < sprite_height; ++i)
+    for (y_coord = 0; y_coord < sprite_height; ++y_coord)
     {
-        sprite_height = cpu->mem[cpu->reg_i + i];
-        for (j = 0; j < 8; ++j)
+        sprite_row = cpu->mem[cpu->reg_i + i];
+        for (x_coord = 0; x_coord < cpu->general_reg[reg_n_x]; ++x_coord)
         {
             y_idx = (cpu->general_reg[reg_n_y] + j) % DISPLAY_HEIGHT;
             x_idx = (cpu->general_reg[reg_n_x] + i) % DISPLAY_WIDTH;
 
-            cpu->general_reg[0xF] |= (cpu->display[x_idx / 8][y_idx] >> (x_idx % 8)) & 1;
+            cpu->general_reg[0xF] |= cpu->display[x_idx][y_idx];
 
-            cpu->display[y_idx][x_idx] ^= sprite_row & (1 << j);
+            if(sprite_row >> j != 0) {
+               //printf("doing the do (%d, %d)\n", x_idx, y_idx); 
+            } else {
+               //printf("not doing the do (%d, %d)\n", x_idx, y_idx);
+            }
+
+            cpu->display[y_idx][x_idx] ^= (sprite_row >> j) & 1;
         }
     }
 }

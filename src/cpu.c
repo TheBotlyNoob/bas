@@ -187,7 +187,7 @@ void run_cpu(c8_cpu_t cpu)
         } while (now_ms < cpu.last_tick_time_ms + 60);
 
         uint16_t op = cpu.mem[cpu.pc] << 8 | (cpu.mem[cpu.pc + 1]);
-        // printf("running opcode: 0x%04x; pc = 0x%04x\n", op, cpu.pc);
+        //printf("running opcode: 0x%04x; pc = 0x%04x\n", op, cpu.pc);
 
         cpu.pc += 2;
 
@@ -198,18 +198,20 @@ void run_cpu(c8_cpu_t cpu)
         }
 
         // todo: do this for realsies; don't hardcode for test rom
-        if (op == 0xdab4)
+        if ((op & 0xF000) == 0xD000)
         {
-            printf("\e[1;1H\e[2J");
+            // printf("\e[1;1H\e[2J");
             for (int i = 0; i < DISPLAY_HEIGHT; ++i)
             {
                 for (int j = 0; j < DISPLAY_WIDTH; ++j)
                 {
-                    if (cpu.display[i][j / 8] >> (j % 8) & 1 == 1)
+                    if (cpu.display[i][j] == 1)
                     {
                         printf("█");
                     }
-                    else
+                    else if(cpu.display[i][j] != 0) {
+                        printf("???\n");
+                    } else
                     {
                         printf(" ");
                     }

@@ -29,7 +29,7 @@ typedef struct
 
     uint64_t last_tick_time_ms;
 
-    uint8_t display[DISPLAY_HEIGHT][DISPLAY_WIDTH / 8];
+    uint8_t display[DISPLAY_HEIGHT][DISPLAY_WIDTH];
 } c8_cpu_t;
 
 void run_cpu(c8_cpu_t cpu);

@@ -30,7 +30,7 @@ CPPFLAGS := $(INC_FLAGS) -MMD -MP
 .PHONY: test run
 
 test: 
-	$(MAKE) CFLAGS="-g -O1" ARGS="test/test_opcode.ch8" run
+	$(MAKE) CFLAGS="-g -O1" ARGS="test/1-chip8-logo.ch8" run
 
 run: build
 	@echo
