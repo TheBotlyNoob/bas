@@ -149,21 +149,24 @@ void op_drw(c8_cpu_t *cpu, uint8_t reg_n_x, uint8_t reg_n_y, uint8_t sprite_heig
 
     for (y_coord = 0; y_coord < sprite_height; ++y_coord)
     {
-        sprite_row = cpu->mem[cpu->reg_i + i];
+        sprite_row = cpu->mem[cpu->reg_i + y_coord];
         for (x_coord = 0; x_coord < cpu->general_reg[reg_n_x]; ++x_coord)
         {
-            y_idx = (cpu->general_reg[reg_n_y] + j) % DISPLAY_HEIGHT;
-            x_idx = (cpu->general_reg[reg_n_x] + i) % DISPLAY_WIDTH;
+            x_idx = (cpu->general_reg[reg_n_x] + x_coord) % DISPLAY_WIDTH;
+            y_idx = (cpu->general_reg[reg_n_y] + y_coord) % DISPLAY_HEIGHT;
 
-            cpu->general_reg[0xF] |= cpu->display[x_idx][y_idx];
+            cpu->general_reg[0xF] |= (cpu->display[x_idx][y_idx] >> x_coord) & 1;
 
-            if(sprite_row >> j != 0) {
-               //printf("doing the do (%d, %d)\n", x_idx, y_idx); 
-            } else {
-               //printf("not doing the do (%d, %d)\n", x_idx, y_idx);
+            if (sprite_row >> x_coord != 0)
+            {
+                // printf("doing the do (%d, %d)\n", x_idx, y_idx);
+            }
+            else
+            {
+                // printf("not doing the do (%d, %d)\n", x_idx, y_idx);
             }
 
-            cpu->display[y_idx][x_idx] ^= (sprite_row >> j) & 1;
+            cpu->display[y_idx][x_idx] ^= (sprite_row >> x_coord) & 1;
         }
     }
 }
